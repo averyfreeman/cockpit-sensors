@@ -1,6 +1,6 @@
 # Cockpit Sensors
 
-A [Cockpit](https://cockpit-project.org/) module that displays all hardware sensor data
+A maintained fork of [ocristopfer/cockpit-sensors](https://github.com/ocristopfer/cockpit-sensors). This [Cockpit](https://cockpit-project.org/) module displays all hardware sensor data
 reported by [lm-sensors](https://github.com/lm-sensors/lm-sensors): temperatures, fan speeds, voltages,
 power, currents, energy, humidity and chassis intrusion. It tells you which sensors need attention,
 and keeps their history with [Performance Co-Pilot (PCP)](https://pcp.io/).
@@ -153,7 +153,7 @@ Build dependencies: `gettext nodejs npm make` (Debian/Ubuntu, Fedora) or
 `gettext-runtime nodejs npm make` (openSUSE).
 
 ```shell
-git clone https://github.com/ocristopfer/cockpit-sensors.git
+git clone https://github.com/averyfreeman/cockpit-sensors.git
 cd cockpit-sensors
 make                     # fetches Cockpit's pkg/lib, runs npm install and builds dist/
 make devel-install       # links dist/ to ~/.local/share/cockpit/sensors; reload Cockpit to see changes

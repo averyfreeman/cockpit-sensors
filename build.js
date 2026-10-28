@@ -8,10 +8,15 @@ import process from 'node:process';
 
 import { sassPlugin } from 'esbuild-sass-plugin';
 
-import { cockpitPoEsbuildPlugin } from './pkg/lib/cockpit-po-plugin.js';
-import { cockpitRsyncEsbuildPlugin } from './pkg/lib/cockpit-rsync-plugin.js';
-import { cleanPlugin } from './pkg/lib/esbuild-cleanup-plugin.js';
-import { cockpitCompressPlugin } from './pkg/lib/esbuild-compress-plugin.js';
+const localPkgLib = new URL('./pkg/lib/', import.meta.url);
+const workspacePkgLib = new URL('../../cockpit/pkg/lib/', import.meta.url);
+const pkgLib = fs.existsSync(new URL('cockpit-po-plugin.js', workspacePkgLib)) ? workspacePkgLib : localPkgLib;
+const [{ cockpitPoEsbuildPlugin }, { cockpitRsyncEsbuildPlugin }, { cleanPlugin }, { cockpitCompressPlugin }] = await Promise.all([
+    import(new URL('cockpit-po-plugin.js', pkgLib)),
+    import(new URL('cockpit-rsync-plugin.js', pkgLib)),
+    import(new URL('esbuild-cleanup-plugin.js', pkgLib)),
+    import(new URL('esbuild-compress-plugin.js', pkgLib)),
+]);
 
 const useWasm = os.arch() !== 'x64';
 
@@ -33,7 +38,7 @@ const esbuild = await (async () => {
 
 const production = process.env.NODE_ENV === 'production';
 // List of directories to use when using import statements
-const nodePaths = ['pkg/lib'];
+const nodePaths = [fs.existsSync(new URL('../../cockpit/pkg/lib', import.meta.url)) ? '../../cockpit/pkg/lib' : 'pkg/lib'];
 const outdir = 'dist';
 
 // Obtain package name from package.json
@@ -151,16 +156,28 @@ try {
                 bundledPackages.add(match[1]);
         }
 
-        // Look up versions from package-lock.json and output simple format
-        const packageLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-        const deps = [];
-        for (const pkgName of Array.from(bundledPackages).sort()) {
-            const lockKey = `node_modules/${pkgName}`;
-            const pkgInfo = packageLock.packages?.[lockKey];
-            if (pkgInfo?.version)
-                deps.push(`${pkgName} ${pkgInfo.version}`);
-            else
-                console.error(`Warning: Could not find version for ${pkgName}`);
+        let getRuntimeNpmModules;
+        try {
+            ({ getRuntimeNpmModules } = await import('../../tools/runtime-npm-modules.mjs'));
+        } catch (error) {
+            if (error.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+        }
+
+        let deps;
+        if (getRuntimeNpmModules) {
+            deps = getRuntimeNpmModules(result.metafile);
+        } else {
+            // Standalone checkouts keep their npm lockfile fallback.
+            const packageLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+            deps = [];
+            for (const pkgName of Array.from(bundledPackages).sort()) {
+                const lockKey = `node_modules/${pkgName}`;
+                const pkgInfo = packageLock.packages?.[lockKey];
+                if (pkgInfo?.version)
+                    deps.push(`${pkgName} ${pkgInfo.version}`);
+                else
+                    console.error(`Warning: Could not find version for ${pkgName}`);
+            }
         }
         fs.writeFileSync('runtime-npm-modules.txt', deps.join('\n') + '\n');
     }
