@@ -74,7 +74,7 @@ jobs:
           cp "cockpit-sensors-$TAG.tar.xz" cockpit-sensors.tar.xz
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tarball-deb
           path: |
@@ -110,7 +110,7 @@ jobs:
           rm -f cockpit-sensors-[0-9]*.tar.xz
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rpm
           path: |
@@ -125,7 +125,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           merge-multiple: true
 
